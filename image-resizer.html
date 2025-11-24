@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Tools Web — Fast client-side Image Resizer. Resize images, maintain aspect ratio, export PNG/JPEG/WebP. Private, no uploads." />
+  <meta name="robots" content="index,follow" />
+  <title>Image Resizer — Tools Web</title>
+  <meta property="og:title" content="Image Resizer — Tools Web" />
+  <meta property="og:description" content="Resize images client-side to custom dimensions and export as JPG, PNG or WebP. Fast and private." />
+
+  <style>
+    :root{--blue:#1b73e8;--bg:#f6fbff;--card:#fff;--muted:#55666f;--radius:12px;--max:1000px}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#fff);color:#0b1720}
+    .wrap{max-width:var(--max);margin:24px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between}
+    .brand{font-weight:700;color:var(--blue)}
+    .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 8px 20px rgba(10,30,60,0.06)}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:900px){.grid{grid-template-columns:1fr 360px}}
+
+    .drop{border:2px dashed rgba(27,115,232,0.16);padding:18px;border-radius:10px;text-align:center;cursor:pointer}
+    .drop.hover{border-color:var(--blue);background:rgba(27,115,232,0.03)}
+
+    .controls{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .row{display:flex;gap:8px;align-items:center}
+    label{font-size:14px;color:var(--muted)}
+    input[type=number]{width:110px;padding:8px;border-radius:8px;border:1px solid #e6eefb}
+    select,input[type=checkbox]{padding:8px}
+    button{background:var(--blue);color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    button[disabled]{opacity:0.6;cursor:not-allowed}
+
+    .preview{display:flex;flex-direction:column;gap:10px}
+    .preview img{max-width:100%;border-radius:8px;display:block}
+    .meta{font-size:13px;color:var(--muted)}
+    .downloads{display:flex;gap:8px;flex-wrap:wrap}
+    .downloads a{background:#eaf3ff;color:var(--blue);padding:8px 10px;border-radius:8px;text-decoration:none;font-weight:600}
+
+    .ad-box{margin-top:12px;padding:12px;border-radius:8px;border:1px dashed #cfe6ff;background:#fbfdff;text-align:center;color:var(--muted)}
+    footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media(max-width:480px){input[type=number]{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <div class="brand">Tools Web</div>
+        <div class="meta" style="font-size:13px;color:var(--muted)">Image Resizer — Private & fast</div>
+      </div>
+    </header>
+
+    <section class="grid" aria-describedby="desc">
+      <div class="card" id="left">
+        <h1 style="margin:0;color:var(--blue);font-size:18px">Image Resizer</h1>
+        <p id="desc" class="meta">Upload an image, set dimensions or scale, keep aspect ratio if needed, and export as JPG/PNG/WebP. Client-side only.</p>
+
+        <label class="drop" id="dropArea" tabindex="0">
+          <input id="fileInput" type="file" accept="image/*" style="display:none" />
+          <div id="dropText">Drag & drop image or click to select</div>
+        </label>
+
+        <div class="controls">
+          <div class="row">
+            <label>Width</label>
+            <input id="widthInput" type="number" min="1" placeholder="auto" />
+            <label>Height</label>
+            <input id="heightInput" type="number" min="1" placeholder="auto" />
+          </div>
+
+          <div class="row">
+            <label style="display:flex;align-items:center;gap:8px"><input id="keepAspect" type="checkbox" checked />Keep aspect ratio</label>
+            <label style="margin-left:auto">Scale (%)</label>
+            <input id="scaleInput" type="number" min="1" max="500" value="100" style="width:90px" />
+          </div>
+
+          <div class="row">
+            <label>Output format</label>
+            <select id="formatSelect">
+              <option value="image/jpeg">JPG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label>Quality (JPG/WebP)</label>
+            <input id="quality" type="range" min="10" max="100" value="90" />
+            <span id="qVal" class="meta">90%</span>
+          </div>
+
+          <div class="row">
+            <button id="resizeBtn" disabled>Resize & Export</button>
+            <button id="resetBtn" type="button">Reset</button>
+          </div>
+
+          <div id="status" class="meta" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <aside class="card preview">
+        <h2 style="margin:0;color:var(--blue);font-size:16px">Preview & Download</h2>
+        <div id="previewWrap" style="min-height:160px;display:flex;align-items:center;justify-content:center;padding:12px;background:#fbfdff;border-radius:8px">
+          <div id="empty" class="meta">No image selected</div>
+          <img id="previewImg" alt="Preview image" style="display:none;max-height:380px;object-fit:contain" loading="lazy" />
+        </div>
+        <div id="info" class="meta">&nbsp;</div>
+        <div class="downloads" id="downloadWrap"></div>
+
+        <div class="ad-box" style="margin-top:12px">
+          <div>Ad space — insert your Google AdSense snippet here.</div>
+          <div style="font-size:12px;color:#2a5aa8;margin-top:6px">Client: <code id="adClient">ADSENSE_CLIENT_ID</code> | Slot: <code id="adSlot">ADSENSE_SLOT_ID</code></div>
+        </div>
+
+      </aside>
+    </section>
+
+    <footer>
+      <div>Contact: <a href="mailto:toolwonders@gmail.com">toolwonders@gmail.com</a></div>
+    </footer>
+  </main>
+
+  <script defer>
+  (function(){
+    const $ = s => document.querySelector(s);
+    const fileInput = $('#fileInput');
+    const dropArea = $('#dropArea');
+    const dropText = $('#dropText');
+    const previewImg = $('#previewImg');
+    const empty = $('#empty');
+    const info = $('#info');
+    const widthInput = $('#widthInput');
+    const heightInput = $('#heightInput');
+    const keepAspect = $('#keepAspect');
+    const scaleInput = $('#scaleInput');
+    const formatSelect = $('#formatSelect');
+    const quality = $('#quality');
+    const qVal = $('#qVal');
+    const resizeBtn = $('#resizeBtn');
+    const resetBtn = $('#resetBtn');
+    const downloadWrap = $('#downloadWrap');
+    const status = $('#status');
+
+    let originalImage = null;
+    let originalWidth = 0, originalHeight = 0;
+
+    // Drag & drop UX
+    ['dragenter','dragover'].forEach(e=>dropArea.addEventListener(e,ev=>{ev.preventDefault();dropArea.classList.add('hover');}));
+    ['dragleave','drop'].forEach(e=>dropArea.addEventListener(e,ev=>{ev.preventDefault();dropArea.classList.remove('hover');}));
+
+    dropArea.addEventListener('drop',e=>{const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(f) handleFile(f);});
+    dropArea.addEventListener('click',()=>fileInput.click());
+    dropArea.addEventListener('keypress', e=>{ if(e.key==='Enter' || e.key===' ') fileInput.click(); });
+
+    fileInput.addEventListener('change', e=>{ const f = e.target.files && e.target.files[0]; if(f) handleFile(f); });
+
+    function handleFile(file){
+      if(!file.type.startsWith('image/')){ alert('Please select an image file.'); return; }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = ()=>{
+        originalImage = img; originalWidth = img.naturalWidth; originalHeight = img.naturalHeight;
+        previewImg.src = url; previewImg.style.display = 'block'; empty.style.display = 'none';
+        info.textContent = `${file.name} • ${Math.round(file.size/1024)} KB • ${originalWidth}×${originalHeight}`;
+        resizeBtn.disabled = false; downloadWrap.innerHTML = '';
+      };
+      img.onerror = ()=>{ alert('Unable to load image'); URL.revokeObjectURL(url); };
+      img.src = url;
+    }
+
+    scaleInput.addEventListener('input', ()=>{
+      if(originalImage){
+        const scale = Number(scaleInput.value)/100;
+        widthInput.value = Math.round(originalWidth * scale);
+        heightInput.value = Math.round(originalHeight * scale);
+      }
+    });
+
+    quality.addEventListener('input', ()=> qVal.textContent = quality.value + '%');
+
+    // If keep aspect ratio, auto adjust height when width changes
+    widthInput.addEventListener('input', ()=>{
+      if(keepAspect.checked && originalImage && widthInput.value){
+        const w = Number(widthInput.value);
+        const h = Math.round((w / originalWidth) * originalHeight);
+        heightInput.value = h;
+      }
+    });
+    heightInput.addEventListener('input', ()=>{
+      if(keepAspect.checked && originalImage && heightInput.value){
+        const h = Number(heightInput.value);
+        const w = Math.round((h / originalHeight) * originalWidth);
+        widthInput.value = w;
+      }
+    });
+
+    resizeBtn.addEventListener('click', async ()=>{
+      if(!originalImage) return;
+      resizeBtn.disabled = true; status.textContent = 'Resizing...';
+      try{
+        // Determine target size
+        let targetW = widthInput.value ? Number(widthInput.value) : null;
+        let targetH = heightInput.value ? Number(heightInput.value) : null;
+
+        if(!targetW && !targetH){ // use scale
+          const scale = Number(scaleInput.value)/100 || 1;
+          targetW = Math.round(originalWidth * scale);
+          targetH = Math.round(originalHeight * scale);
+        } else if(targetW && !targetH){ // compute H
+          targetH = Math.round((targetW / originalWidth) * originalHeight);
+        } else if(!targetW && targetH){
+          targetW = Math.round((targetH / originalHeight) * originalWidth);
+        }
+
+        // Create canvas and draw
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW; canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        // draw with imageBitmap for performance
+        const bitmap = await createImageBitmap(originalImage);
+        ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+
+        const mime = formatSelect.value || 'image/jpeg';
+        const qual = Math.max(0.1, Math.min(1, quality.value/100));
+
+        const blob = await new Promise(res=>canvas.toBlob(res, mime, qual));
+        const url = URL.createObjectURL(blob);
+
+        // Show preview as resized
+        previewImg.src = url;
+        info.textContent = `Resized: ${targetW}×${targetH} • ${Math.round(blob.size/1024)} KB • ${mime}`;
+
+        downloadWrap.innerHTML = '';
+        const a = document.createElement('a'); a.href = url; a.download = `resized.${mime.split('/')[1]}`; a.textContent = `Download (${Math.round(blob.size/1024)} KB)`; a.className='';
+        downloadWrap.appendChild(a);
+
+        // memory cleanup on click
+        a.addEventListener('click', ()=> setTimeout(()=>URL.revokeObjectURL(url),1500));
+        status.textContent = 'Ready.';
+      }catch(err){ console.error(err); status.textContent = 'Error while resizing.'; }
+      finally{ resizeBtn.disabled = false; }
+    });
+
+    resetBtn.addEventListener('click', ()=>{
+      originalImage = null; previewImg.src = ''; previewImg.style.display='none'; empty.style.display='block'; info.textContent=''; widthInput.value=''; heightInput.value=''; scaleInput.value=100; quality.value=90; qVal.textContent='90%'; downloadWrap.innerHTML=''; resizeBtn.disabled=true; fileInput.value=''; status.textContent='';
+    });
+
+    // AdSense helper - call from console or server-rendered script with your IDs
+    window.insertAdSense = function(clientId, slotId){
+      const adClient = document.getElementById('adClient');
+      const adSlot = document.getElementById('adSlot');
+      if(adClient) adClient.textContent = clientId || 'ADSENSE_CLIENT_ID';
+      if(adSlot) adSlot.textContent = slotId || 'ADSENSE_SLOT_ID';
+      // To enable real ads: add the official adsbygoogle script to head and inject <ins class="adsbygoogle"> element in the ad-box and call (adsbygoogle = window.adsbygoogle || []).push({});
+    };
+
+  })();
+  </script>
+</body>
+</html>
