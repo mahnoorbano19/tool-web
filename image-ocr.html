@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Tools Web — Image to Text (OCR) tool. Convert images to editable text in the browser using Tesseract.js. Fast, private and responsive." />
+  <title>Image to Text (OCR) — Tools Web</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Image to Text (OCR) — Tools Web" />
+  <meta property="og:description" content="Convert image text to editable text using client-side OCR. No uploads, private & fast." />
+  <link rel="canonical" href="https://yourdomain.com/image-to-text" />
+
+  <style>
+    :root{--blue:#1b73e8;--bg:#f6fbff;--card:#fff;--muted:#586874;--radius:12px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#fff);color:#0b1724}
+    .wrap{max-width:980px;margin:24px auto;padding:18px}
+    header{display:flex;justify-content:space-between;align-items:center}
+    .brand{font-weight:700;color:var(--blue)}
+    h1{color:var(--blue);font-size:20px;margin:6px 0}
+    .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 8px 20px rgba(10,30,60,0.06)}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:900px){.grid{grid-template-columns:1fr 360px}}
+
+    .drop{border:2px dashed rgba(27,115,232,0.16);padding:18px;border-radius:10px;text-align:center;cursor:pointer}
+    .drop.hover{border-color:var(--blue);background:rgba(27,115,232,0.03)}
+
+    .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center}
+    select,input[type=range]{padding:8px;border-radius:8px;border:1px solid #e6eefb}
+    button{background:var(--blue);color:white;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    button[disabled]{opacity:0.6;cursor:not-allowed}
+
+    .preview img{max-width:100%;border-radius:8px;display:block}
+    .meta{font-size:13px;color:var(--muted)}
+
+    .progress{height:8px;background:#e6f0ff;border-radius:99px;overflow:hidden}
+    .progress > i{display:block;height:100%;width:0%;background:var(--blue);transition:width 120ms linear}
+
+    .result{white-space:pre-wrap;background:#fbfdff;padding:12px;border-radius:8px;border:1px solid #e6eefb;min-height:120px;overflow:auto}
+
+    .ad-box{margin-top:12px;padding:12px;border-radius:8px;border:1px dashed #cfe6ff;background:#fbfdff;text-align:center;color:var(--muted)}
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <div class="brand">Tools Web</div>
+        <div class="meta">Image to Text (OCR)</div>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h1>Image to Text (OCR)</h1>
+        <p class="meta">Upload an image and extract editable text client-side. Supports common image formats. Select language and download the result.</p>
+
+        <label class="drop" id="dropArea" tabindex="0">
+          <input id="fileInput" type="file" accept="image/*" style="display:none" />
+          <div id="dropText">Drag & drop an image here or click to select</div>
+        </label>
+
+        <div class="controls">
+          <label class="meta">Language</label>
+          <select id="langSelect">
+            <option value="eng" selected>English (eng)</option>
+            <option value="spa">Spanish (spa)</option>
+            <option value="fra">French (fra)</option>
+            <option value="deu">German (deu)</option>
+            <option value="hin">Hindi (hin)</option>
+            <!-- Add more language codes as needed. Tesseract will download traineddata for selected language -->
+          </select>
+
+          <button id="startBtn" disabled>Start OCR</button>
+          <button id="copyBtn" disabled>Copy Text</button>
+          <button id="downloadBtn" disabled>Download .txt</button>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="progress" aria-hidden="true"><i id="progressBar" style="width:0%"></i></div>
+          <div id="status" class="meta" style="margin-top:6px">No image selected</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="meta">Extracted text</div>
+          <div id="result" class="result">&nbsp;</div>
+        </div>
+
+      </div>
+
+      <aside class="card">
+        <div class="preview" id="previewWrap">
+          <div id="emptyPreview" class="meta">No image selected</div>
+          <img id="previewImg" alt="Uploaded preview" style="display:none;max-height:360px;object-fit:contain" loading="lazy" />
+        </div>
+
+        <div class="meta" id="fileInfo" style="margin-top:10px">&nbsp;</div>
+
+        <div class="ad-box" style="margin-top:12px">
+          Ad space — replace with your Google AdSense snippet.
+          <div style="font-size:12px;color:#274f96;margin-top:6px">Client: <code id="adClient">ADSENSE_CLIENT_ID</code> | Slot: <code id="adSlot">ADSENSE_SLOT_ID</code></div>
+        </div>
+
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">Tips: Higher-resolution images give better OCR accuracy. Use clear, high-contrast text.</div>
+      </aside>
+    </section>
+
+    <footer>Contact: <a href="mailto:toolwonders@gmail.com">toolwonders@gmail.com</a></footer>
+  </main>
+
+  <!-- Tesseract.js CDN (client-side OCR). Keep it deferred so page loads fast. -->
+  <script defer src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
+
+  <script defer>
+  (function(){
+    const $ = s => document.querySelector(s);
+    const dropArea = $('#dropArea');
+    const fileInput = $('#fileInput');
+    const previewImg = $('#previewImg');
+    const emptyPreview = $('#emptyPreview');
+    const fileInfo = $('#fileInfo');
+    const startBtn = $('#startBtn');
+    const copyBtn = $('#copyBtn');
+    const downloadBtn = $('#downloadBtn');
+    const resultEl = $('#result');
+    const progressBar = $('#progressBar');
+    const status = $('#status');
+    const langSelect = $('#langSelect');
+
+    let currentFile = null;
+    let currentText = '';
+    let worker = null;
+
+    // Drag & drop UX
+    ['dragenter','dragover'].forEach(evt=>dropArea.addEventListener(evt,e=>{e.preventDefault();dropArea.classList.add('hover');}));
+    ['dragleave','drop'].forEach(evt=>dropArea.addEventListener(evt,e=>{e.preventDefault();dropArea.classList.remove('hover');}));
+
+    dropArea.addEventListener('drop', e=>{ const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(f) handleFile(f); });
+    dropArea.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', e=>{ const f = e.target.files && e.target.files[0]; if(f) handleFile(f); });
+
+    function handleFile(file){
+      if(!file.type.startsWith('image/')){ alert('Please choose an image file.'); return; }
+      currentFile = file;
+      const url = URL.createObjectURL(file);
+      previewImg.src = url; previewImg.style.display = 'block'; emptyPreview.style.display = 'none';
+      fileInfo.textContent = `${file.name} • ${Math.round(file.size/1024)} KB`;
+      startBtn.disabled = false; status.textContent = 'Ready to run OCR'; resultEl.textContent = '';
+      currentText = '';
+      copyBtn.disabled = true; downloadBtn.disabled = true;
+    }
+
+    // Initialize worker only when needed for performance
+    async function initWorker(){
+      if(worker) return worker;
+      status.textContent = 'Initializing OCR engine...';
+      worker = Tesseract.createWorker({
+        logger: m => {
+          // m.progress, m.status
+          if(m && m.status){
+            status.textContent = m.status + (m.progress ? ` (${Math.round(m.progress*100)}%)` : '');
+          }
+          if(m && m.progress!=undefined){
+            progressBar.style.width = (m.progress*100).toFixed(2) + '%';
+          }
+        }
+      });
+      await worker.load();
+      await worker.loadLanguage('eng'); // load default english; we'll switch if needed when start
+      await worker.initialize('eng');
+      status.textContent = 'OCR engine ready';
+      return worker;
+    }
+
+    startBtn.addEventListener('click', async ()=>{
+      if(!currentFile) return; startBtn.disabled = true; currentText=''; resultEl.textContent=''; progressBar.style.width='0%';
+      try{
+        // Initialize worker and ensure language
+        await initWorker();
+        const lang = langSelect.value || 'eng';
+        // if language changed from english, reinitialize worker language
+        // to keep this simple we re-initialize each time language differs
+        await worker.loadLanguage(lang);
+        await worker.initialize(lang);
+
+        status.textContent = 'Recognizing...';
+
+        const {data: {text}} = await worker.recognize(currentFile, {lang});
+        currentText = text;
+        resultEl.textContent = text || '(No text recognized)';
+        status.textContent = 'Done';
+        copyBtn.disabled = !text;
+        downloadBtn.disabled = !text;
+
+      }catch(err){
+        console.error(err);
+        status.textContent = 'Error during OCR. Try a different image or language.';
+      }finally{
+        startBtn.disabled = false;
+      }
+    });
+
+    copyBtn.addEventListener('click', async ()=>{
+      if(!currentText) return; try{ await navigator.clipboard.writeText(currentText); alert('Copied to clipboard'); }catch(e){ alert('Copy failed'); }
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+      if(!currentText) return; const blob = new Blob([currentText], {type:'text/plain;charset=utf-8'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = (currentFile && currentFile.name ? currentFile.name.replace(/\.[^.]+$/, '') : 'ocr-output') + '.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+    });
+
+    // Cleanup if page unloads
+    window.addEventListener('beforeunload', async ()=>{ if(worker){ try{ await worker.terminate(); }catch(e){} } });
+
+    // AdSense helper
+    window.insertAdSense = function(clientId, slotId){
+      const adClient = document.getElementById('adClient');
+      const adSlot = document.getElementById('adSlot');
+      if(adClient) adClient.textContent = clientId || 'ADSENSE_CLIENT_ID';
+      if(adSlot) adSlot.textContent = slotId || 'ADSENSE_SLOT_ID';
+      // To enable ads: inject official script and ad element into .ad-box
+    };
+
+  })();
+  </script>
+</body>
+</html>
