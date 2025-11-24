@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Free online Image Cropper tool — Crop JPG, PNG, and WebP images quickly with Tools Web. Mobile-friendly, fast, and SEO-optimized." />
+  <meta name="robots" content="index, follow" />
+  <title>Image Cropper — Tools Web</title>
+
+  <style>
+    :root { --primary:#1b73e8;--bg:#f4f8ff;--card:#fff;--radius:12px; }
+    * { box-sizing:border-box; font-family:Arial, sans-serif; }
+    body { margin:0; background:var(--bg); color:#222; }
+    header { text-align:center; background:var(--primary); padding:15px; color:white; font-size:22px; font-weight:bold; }
+
+    .container { max-width:1000px; margin:auto; padding:20px; }
+    .tool-box { background:white; padding:18px; border-radius:var(--radius); box-shadow:0px 8px 20px rgba(0,0,0,0.05); }
+
+    .upload-area {
+      border:2px dashed var(--primary);
+      padding:25px; border-radius:12px;
+      text-align:center; cursor:pointer;
+      transition:0.3s;
+    }
+    .upload-area:hover { background:#eaf2ff; }
+    input[type="file"] { display:none; }
+
+    #canvasWrapper { display:none; margin-top:20px; text-align:center; }
+    canvas { max-width:100%; border-radius:10px; border:1px solid #ddd; cursor:crosshair; }
+
+    .controls { margin-top:15px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    button {
+      background:var(--primary); color:white;
+      padding:10px 14px; border:none; cursor:pointer;
+      border-radius:8px; font-weight:bold;
+    }
+    button:disabled { background:#7ba9eb; cursor:not-allowed; }
+
+    select { padding:8px; border-radius:8px; border:1px solid #ccc; }
+
+    .ads-box{
+      margin-top:25px;
+      padding:15px;text-align:center;
+      background:#eaf3ff;
+      border-radius:var(--radius);
+      border:1px dashed var(--primary);
+      font-size:14px;
+    }
+
+    footer { text-align:center; margin-top:20px; font-size:14px; color:#777; }
+  </style>
+</head>
+<body>
+
+<header>Tools Web — Image Cropper</header>
+
+<div class="container">
+  <h2 style="text-align:center;color:var(--primary)">Crop Your Image Easily</h2>
+  <p style="text-align:center;">Upload, crop & download in PNG, JPG or WebP format. 100% browser-based — no upload required.</p>
+
+  <div class="tool-box">
+
+    <label class="upload-area" id="uploadBox">
+      <p>Click or drag & drop an image here</p>
+      <input type="file" id="fileInput" accept="image/*">
+    </label>
+
+    <div id="canvasWrapper">
+      <canvas id="cropCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <select id="formatSelect">
+        <option value="image/png">PNG</option>
+        <option value="image/jpeg">JPG</option>
+        <option value="image/webp">WebP</option>
+      </select>
+
+      <button id="cropBtn" disabled>Crop & Download</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <!-- Google AdSense placeholder -->
+    <div class="ads-box">
+      🚀 <b>Advertisement</b><br>
+      Insert Google AdSense Code Here<br>
+      <small>Client ID + Slot ID</small>
+    </div>
+
+  </div>
+</div>
+
+<footer>© Tools Web | Contact: toolwonders@gmail.com</footer>
+
+<script>
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  const canvas = document.getElementById('cropCanvas');
+  const ctx = canvas.getContext('2d');
+  const cropBtn = document.getElementById('cropBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const formatSelect = document.getElementById('formatSelect');
+  const canvasWrapper = document.getElementById('canvasWrapper');
+
+  let img = new Image();
+  let cropping = false;
+  let startX, startY, endX, endY;
+
+  uploadBox.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      canvasWrapper.style.display = 'block';
+      cropBtn.disabled = false;
+    };
+  });
+
+  canvas.addEventListener('mousedown', (e) => {
+    cropping = true;
+    startX = e.offsetX;
+    startY = e.offsetY;
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!cropping) return;
+    ctx.drawImage(img, 0, 0);
+    endX = e.offsetX;
+    endY = e.offsetY;
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+  });
+
+  canvas.addEventListener('mouseup', () => cropping = false);
+
+  cropBtn.addEventListener("click", () => {
+    const width = endX - startX;
+    const height = endY - startY;
+
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = Math.abs(width);
+    outputCanvas.height = Math.abs(height);
+
+    const outputCtx = outputCanvas.getContext('2d');
+    outputCtx.drawImage(img, startX, startY, width, height, 0, 0, width, height);
+
+    const format = formatSelect.value;
+
+    const link = document.createElement('a');
+    link.href = outputCanvas.toDataURL(format);
+    link.download = `cropped.${format.split('/')[1]}`;
+    link.click();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    canvasWrapper.style.display = 'none';
+    cropBtn.disabled = true;
+  });
+</script>
+
+</body>
+</html>
