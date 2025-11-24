@@ -1,0 +1,365 @@
+<!--
+  Image Converter Tool - Tool Web
+  - Fully responsive single-page image converter (client-side)
+  - Drag & drop + file input, preview, choose output format & quality
+  - Client-side conversion using <canvas> and toBlob -> downloadable file
+  - Placeholder area for Google AdSense (insert your client & slot IDs)
+  - SEO-friendly meta tags and lightweight, accessible markup
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Tool Web — Fast, secure client-side Image Converter. Convert images to JPG, PNG, WebP and more. No upload required." />
+  <meta name="robots" content="index,follow" />
+  <title>Image Converter — Tools Web</title>
+
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="Image Converter — Tools Web" />
+  <meta property="og:description" content="Convert images client-side to JPG, PNG, WebP and more. Fast, private and free." />
+  <meta property="og:type" content="website" />
+
+  <!-- Canonical (adjust when deploying) -->
+  <link rel="canonical" href="https://yourdomain.com/image-converter" />
+
+  <!-- Minimal CSS, mobile-first -->
+  <style>
+    :root{
+      --blue:#1b73e8;
+      --bg:#f7fbff;
+      --card:#ffffff;
+      --muted:#586874;
+      --radius:12px;
+      --max-width:980px;
+      --gap:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      background:linear-gradient(180deg,var(--bg),#ffffff);
+      color:#0f1724;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.4;
+    }
+    .container{max-width:var(--max-width);margin:24px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-weight:700;color:var(--blue);font-size:20px}
+    .tag{color:var(--muted);font-size:13px}
+
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:0 6px 18px rgba(11,30,60,0.06);padding:18px}
+
+    /* Layout */
+    .grid{display:grid;grid-template-columns:1fr;gap:var(--gap);margin-top:18px}
+    @media(min-width:880px){.grid{grid-template-columns:1fr 360px}}
+
+    /* Drop area */
+    .drop{border:2px dashed rgba(27,115,232,0.18);padding:18px;border-radius:10px;text-align:center;cursor:pointer}
+    .drop.hover{background:rgba(27,115,232,0.03);border-color:var(--blue)}
+    .drop input{display:none}
+    .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    select,input[type=range]{padding:8px;border-radius:8px;border:1px solid #e6eefb;background:#fff}
+    button{background:var(--blue);color:white;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    button[disabled]{opacity:0.6;cursor:not-allowed}
+
+    /* Preview column */
+    .preview{display:flex;flex-direction:column;gap:12px}
+    .preview img{max-width:100%;border-radius:8px;display:block}
+    .meta{font-size:13px;color:var(--muted)}
+    .download{display:flex;gap:10px;flex-wrap:wrap}
+    .download a{background:#eaf3ff;color:var(--blue);padding:8px 10px;border-radius:8px;text-decoration:none;font-weight:600}
+
+    /* Ad placeholder - small and unobtrusive */
+    .ad-card{min-height:90px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px dashed #dbeefe;background:#fbfdff;color:var(--muted);font-size:14px}
+
+    footer{margin-top:22px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* Accessibility focus */
+    button:focus,select:focus,input:focus{outline:3px solid rgba(27,115,232,0.18);outline-offset:2px}
+  </style>
+</head>
+<body>
+
+  <main class="container">
+    <header>
+      <div>
+        <div class="brand">Tools Web</div>
+        <div class="tag">Simplifying your digital life.</div>
+      </div>
+      <div aria-hidden="true"> <!-- reserved for small utilities / future --> </div>
+    </header>
+
+    <section class="grid">
+
+      <!-- LEFT: Converter UI -->
+      <div class="card" aria-labelledby="converterHeading">
+        <h1 id="converterHeading" style="margin:0 0 10px 0;font-size:18px;color:var(--blue)">Image Converter</h1>
+        <p class="meta">Convert images client-side to JPG, PNG, WebP and more — private & fast. No files are uploaded to a server.</p>
+
+        <label class="drop" id="dropArea" tabindex="0">
+          <input id="fileInput" type="file" accept="image/*" aria-label="Upload image" />
+          <div id="dropMessage">Drag & drop an image here or click to choose (PNG, JPG, WEBP, GIF, BMP)</div>
+        </label>
+
+        <div class="controls" style="margin-top:14px">
+          <label style="display:flex;gap:8px;align-items:center">
+            <span class="meta">Output</span>
+            <select id="formatSelect" aria-label="Choose output format">
+              <option value="image/jpeg">JPG (recommended)</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WebP (best compression)</option>
+              <option value="image/bmp">BMP</option>
+            </select>
+          </label>
+
+          <label style="display:flex;gap:8px;align-items:center">
+            <span class="meta">Quality</span>
+            <input id="qualityRange" type="range" min="10" max="100" value="90" aria-label="Select quality (for JPEG/WebP)" />
+          </label>
+
+          <button id="convertBtn" disabled>Convert</button>
+          <button id="resetBtn" type="button">Reset</button>
+        </div>
+
+        <div id="status" class="meta" style="margin-top:10px" aria-live="polite"></div>
+
+        <!-- SEO-friendly, crawlable content about the tool (brief, useful) -->
+        <noscript>
+          <p class="meta">This tool uses client-side JavaScript to convert images. Please enable JavaScript to use it.</p>
+        </noscript>
+      </div>
+
+      <!-- RIGHT: Preview + Ads -->
+      <aside class="card preview" aria-labelledby="previewHeading">
+        <h2 id="previewHeading" style="margin:0 0 6px 0;font-size:16px">Preview & Download</h2>
+
+        <div id="previewWrap" style="min-height:160px;display:flex;align-items:center;justify-content:center;background:#fbfdff;border-radius:8px;padding:12px">
+          <div id="emptyPreview" class="meta">No image selected</div>
+          <img id="previewImg" alt="Uploaded preview" style="display:none;max-height:320px;object-fit:contain" loading="lazy" />
+        </div>
+
+        <div class="meta" id="imgInfo" style="margin-top:8px">&nbsp;</div>
+
+        <div class="download" id="downloadWrap" style="margin-top:10px"></div>
+
+        <!-- AdSense placeholder - replace CLIENT_ID and SLOT_ID with your values -->
+        <div style="margin-top:14px">
+          <div class="ad-card" id="adPlaceholder">
+            <!-- Replace below with your AdSense code when ready -->
+            <div>
+              Ad space — insert your Google AdSense snippet here.<br>
+              <small style="color:#294e85">(Client: <code id="adClient">ADSENSE_CLIENT_ID</code> | Slot: <code id="adSlot">ADSENSE_SLOT_ID</code>)</small>
+            </div>
+          </div>
+
+          <!-- Example AdSense snippet (commented). Replace CLIENT & SLOT and uncomment to enable. -->
+          <!--
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-REPLACE_WITH_YOUR_CLIENT_ID"
+                 data-ad-slot="REPLACE_WITH_SLOT_ID"
+                 data-ad-format="auto"></ins>
+            <script>
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+          -->
+        </div>
+
+      </aside>
+
+    </section>
+
+    <footer>
+      <div style="max-width:680px;margin:0 auto">
+        <p>Fast, private image conversion — Tools Web</p>
+        <p>Contact: <a href="mailto:toolwonders@gmail.com">toolwonders@gmail.com</a></p>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Lightweight JS: deferred -->
+  <script defer>
+  (function(){
+    // Helpers
+    const $ = sel => document.querySelector(sel);
+    const toKB = n => Math.round(n/1024);
+
+    // Elements
+    const fileInput = $('#fileInput');
+    const dropArea = $('#dropArea');
+    const dropMessage = $('#dropMessage');
+    const previewImg = $('#previewImg');
+    const emptyPreview = $('#emptyPreview');
+    const imgInfo = $('#imgInfo');
+    const convertBtn = $('#convertBtn');
+    const resetBtn = $('#resetBtn');
+    const formatSelect = $('#formatSelect');
+    const qualityRange = $('#qualityRange');
+    const status = $('#status');
+    const downloadWrap = $('#downloadWrap');
+
+    let currentFile = null;
+
+    // Drag & Drop UX
+    ['dragenter','dragover'].forEach(evt => {
+      dropArea.addEventListener(evt, e => {e.preventDefault();dropArea.classList.add('hover');});
+    });
+    ['dragleave','drop'].forEach(evt => {
+      dropArea.addEventListener(evt, e => {e.preventDefault();dropArea.classList.remove('hover');});
+    });
+
+    dropArea.addEventListener('drop', e => {
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(file) handleFile(file);
+    });
+
+    dropArea.addEventListener('click', ()=> fileInput.click());
+    dropArea.addEventListener('keypress', e => { if(e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+
+    fileInput.addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if(f) handleFile(f);
+    });
+
+    // Reset
+    resetBtn.addEventListener('click', resetAll);
+
+    function resetAll(){
+      currentFile = null;
+      previewImg.style.display = 'none';
+      previewImg.src = '';
+      emptyPreview.style.display = 'block';
+      imgInfo.textContent = '';
+      downloadWrap.innerHTML = '';
+      convertBtn.disabled = true;
+      status.textContent = '';
+      fileInput.value = '';
+    }
+
+    // Handle file selection
+    function handleFile(file){
+      if(!file.type.startsWith('image/')){ alert('Please select an image file.'); return; }
+      currentFile = file;
+      emptyPreview.style.display = 'none';
+      const url = URL.createObjectURL(file);
+      previewImg.onload = () => URL.revokeObjectURL(url);
+      previewImg.src = url;
+      previewImg.style.display = 'block';
+      imgInfo.textContent = `${file.name} • ${toKB(file.size)} KB • ${file.type || 'image'}`;
+      convertBtn.disabled = false;
+      downloadWrap.innerHTML = '';
+      status.textContent = '';
+    }
+
+    // Convert logic using canvas
+    convertBtn.addEventListener('click', async ()=>{
+      if(!currentFile) return;
+      convertBtn.disabled = true;
+      status.textContent = 'Processing...';
+
+      try{
+        const img = await loadImageFromFile(currentFile);
+        const format = formatSelect.value || 'image/jpeg';
+        const quality = Math.max(0.1, Math.min(1, qualityRange.value/100));
+
+        const blob = await convertImageToBlob(img, format, quality);
+        const name = generateOutputName(currentFile.name, mimeToExt(format));
+
+        showDownload(blob, name);
+        status.textContent = 'Conversion ready.';
+      }catch(err){
+        console.error(err);
+        status.textContent = 'Conversion failed. Try a different image.';
+      }finally{
+        convertBtn.disabled = false;
+      }
+    });
+
+    // Utilities
+    function loadImageFromFile(file){
+      return new Promise((resolve, reject)=>{
+        const img = new Image();
+        img.onload = ()=>resolve(img);
+        img.onerror = reject;
+        const url = URL.createObjectURL(file);
+        img.src = url;
+      });
+    }
+
+    function mimeToExt(mime){
+      if(mime === 'image/jpeg') return 'jpg';
+      if(mime === 'image/png') return 'png';
+      if(mime === 'image/webp') return 'webp';
+      if(mime === 'image/bmp') return 'bmp';
+      return 'img';
+    }
+
+    function generateOutputName(original, ext){
+      const base = original.replace(/\.[^.]+$/, '');
+      return `${base}-converted.${ext}`;
+    }
+
+    function convertImageToBlob(img, mime, quality){
+      return new Promise((resolve, reject)=>{
+        // Create canvas sized to image
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        // toBlob is asynchronous and memory-efficient
+        canvas.toBlob(blob => {
+          if(blob) resolve(blob); else reject(new Error('toBlob failed'));
+        }, mime, quality);
+      });
+    }
+
+    function showDownload(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const sizeKB = toKB(blob.size);
+
+      downloadWrap.innerHTML = '';
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.textContent = `Download (${sizeKB} KB)`;
+      a.setAttribute('aria-label', 'Download converted image');
+      downloadWrap.appendChild(a);
+
+      // Preview updated to converted blob for accurate view
+      previewImg.src = url;
+      imgInfo.textContent = `${filename} • ${sizeKB} KB • ${blob.type}`;
+
+      // Cleanup object URL on click (release memory)
+      a.addEventListener('click', ()=>{ setTimeout(()=>URL.revokeObjectURL(url), 1500); });
+    }
+
+    // initial reset
+    resetAll();
+
+    // Performance notes: touch-friendly controls, simple DOM, no external libs
+    // Ad insertion helper: a small function to replace ad placeholders with your values
+    window.insertAdSense = function(clientId, slotId){
+      // update visible placeholder
+      const adClient = document.getElementById('adClient');
+      const adSlot = document.getElementById('adSlot');
+      if(adClient) adClient.textContent = clientId || 'ADSENSE_CLIENT_ID';
+      if(adSlot) adSlot.textContent = slotId || 'ADSENSE_SLOT_ID';
+
+      // When you are ready to show real AdSense, add the official script and element as commented in the HTML.
+      // Example (do NOT call this automatically; call when you want to initialize ads):
+      // const s = document.createElement('script');
+      // s.async = true; s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + clientId;
+      // s.crossOrigin = 'anonymous';
+      // document.head.appendChild(s);
+      // then replace the adPlaceholder innerHTML with your <ins class="adsbygoogle"...> element and call (adsbygoogle = window.adsbygoogle || []).push({});
+    };
+
+  })();
+  </script>
+
+</body>
+</html>
