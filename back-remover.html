@@ -8,119 +8,115 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f3f4f6;
+      background: #f2f5f8;
       text-align: center;
-      padding: 30px;
+      padding: 40px;
     }
 
-    .container {
+    .box {
       background: white;
       padding: 25px;
       max-width: 500px;
       margin: auto;
       border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
-    input {
-      margin: 15px 0;
-    }
-
-    button {
-      padding: 12px 20px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
+    input[type="file"] {
+      margin-top: 15px;
       font-size: 16px;
       cursor: pointer;
-      transition: .3s;
-    }
-
-    button:hover {
-      background: #005bcc;
     }
 
     img {
       width: 100%;
-      margin-top: 15px;
       border-radius: 10px;
+      margin-top: 20px;
+      display: none;
     }
 
-    .download-btn {
+    #download {
+      margin-top: 15px;
+      display: none;
+      padding: 12px 20px;
       background: #28a745;
-      margin-top: 10px;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 17px;
+      transition: .3s;
     }
 
-    .download-btn:hover {
-      background: #1f7a33;
+    #download:hover {
+      background: #1e7c34;
+    }
+
+    .loading {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #007bff;
+      display: none;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
-    <h2>Background Remover Tool</h2>
-    <p>Select an image and click the button to remove its background.</p>
+  <div class="box">
+    <h2>Background Remover</h2>
+    <p>Upload an image and background will be removed automatically.</p>
 
-    <input type="file" id="upload" accept="image/*" />
+    <input type="file" id="upload" accept="image/*">
 
-    <button id="removeBtn">Remove Background</button>
+    <div class="loading" id="loadingMsg">Processing... Please wait 🔄</div>
 
-    <img id="result" style="display: none" />
-
-    <button id="download" class="download-btn" style="display:none;">
-      Download Image
-    </button>
+    <img id="result">
+    <a id="download">Download Image</a>
   </div>
 
-  <script>
-    const upload = document.getElementById("upload");
-    const result = document.getElementById("result");
-    const removeBtn = document.getElementById("removeBtn");
-    const downloadBtn = document.getElementById("download");
 
-    removeBtn.addEventListener("click", async () => {
-      if (!upload.files[0]) {
-        alert("Please upload an image first!");
-        return;
-      }
+<script>
+  const upload = document.getElementById("upload");
+  const result = document.getElementById("result");
+  const download = document.getElementById("download");
+  const loadingMsg = document.getElementById("loadingMsg");
 
-      let file = upload.files[0];
-      let formData = new FormData();
-      formData.append("image_file", file);
-      formData.append("size", "auto");
+  upload.addEventListener("change", async () => {
+    if (!upload.files[0]) return;
 
-      removeBtn.innerText = "Processing...";
-      removeBtn.disabled = true;
+    loadingMsg.style.display = "block";
+    result.style.display = "none";
+    download.style.display = "none";
 
-      // API Request
-      let response = await fetch("https://api.remove.bg/v1.0/removebg", {
-        method: "POST",
-        headers: {
-          "X-Api-Key": "YOUR_API_KEY_HERE" // Replace with your own API key
-        },
-        body: formData
-      });
+    let file = upload.files[0];
+    let formData = new FormData();
+    formData.append("image_file", file);
+    formData.append("size", "auto");
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      result.src = url;
-      result.style.display = "block";
-      downloadBtn.style.display = "block";
-
-      removeBtn.innerText = "Remove Background";
-      removeBtn.disabled = false;
-
-      downloadBtn.onclick = () => {
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "background-removed.png";
-        a.click();
-      };
+    let response = await fetch("https://api.remove.bg/v1.0/removebg", {
+      method: "POST",
+      headers: {
+        "X-Api-Key": "YOUR_API_KEY_HERE" 
+      },
+      body: formData
     });
-  </script>
+
+    const blob = await response.blob();
+    const imageURL = URL.createObjectURL(blob);
+
+    result.src = imageURL;
+    result.style.display = "block";
+    download.href = imageURL;
+    download.download = "removed-bg.png";
+    download.style.display = "inline-block";
+    loadingMsg.style.display = "none";
+  });
+</script>
+
 </body>
 </html>
+
+     
+
+ 
