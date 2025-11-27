@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Responsive Document Converter — convert DOCX / PDF / TXT / HTML in the browser. SEO & performance friendly." />
+  <title>Responsive Document Converter</title>
+
+  <!-- Basic SEO / Performance hints -->
+  <link rel="canonical" href="https://example.com/document-converter" />
+  <meta name="robots" content="index,follow" />
+
+  <style>
+    :root{--bg:#f7fbff;--card:#ffffff;--accent:#0b69ff;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;background:var(--bg);color:#0f172a}
+    header{background:linear-gradient(90deg,#0b69ff22,transparent);padding:18px 16px}
+    .container{max-width:980px;margin:18px auto;padding:0 16px}
+    .hero{display:flex;gap:16px;align-items:center}
+    .brand{font-weight:700;font-size:20px}
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(12,18,33,0.06)}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+    @media (max-width:880px){.grid{grid-template-columns:1fr} .sidebar{order:2}}
+
+    label{display:block;margin-bottom:8px;font-weight:600}
+    .muted{color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    input[type=file]{display:block}
+    select,input[type=text],button{padding:10px 12px;border-radius:8px;border:1px solid #e6edf3}
+    button{background:var(--accent);color:white;border:none;cursor:pointer}
+    button.secondary{background:transparent;color:var(--accent);border:1px solid #dbeafe}
+    .preview{min-height:220px;border-radius:8px;padding:12px;border:1px dashed #e6edf3;background:#fbfdff;overflow:auto}
+    .ad-slot{margin-top:12px;padding:12px;border-radius:8px;border:1px dashed #e2e8f0;background:linear-gradient(180deg,#fff,#fbfcff);text-align:center;color:var(--muted)}
+    .hint{font-size:13px;color:var(--muted);margin-top:10px}
+
+    footer{padding:18px;text-align:center;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container hero">
+      <div class="brand">Document Converter</div>
+      <div class="muted">Convert DOCX | PDF | TXT | HTML — fully client-side, privacy-friendly</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <section class="card main">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div>
+            <h2 style="margin:0 0 6px 0">Convert documents in your browser</h2>
+            <div class="muted">Choose a file, pick the output format and convert. Files do not leave the browser.</div>
+          </div>
+        </div>
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid #eef2ff" />
+
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1">
+            <label for="file">Select document</label>
+            <input id="file" type="file" accept=".docx,.pdf,.txt,.html,.htm,.md" />
+            <div id="fileInfo" class="hint"></div>
+          </div>
+
+          <div style="width:220px">
+            <label for="target">Output format</label>
+            <select id="target">
+              <option value="txt">Plain text (.txt)</option>
+              <option value="html">HTML (.html)</option>
+              <option value="pdf">PDF (.pdf)</option>
+            </select>
+          </div>
+
+          <div style="min-width:120px;display:flex;flex-direction:column;gap:8px">
+            <label>&nbsp;</label>
+            <div class="controls">
+              <button id="convertBtn">Convert</button>
+              <button id="downloadBtn" class="secondary" disabled>Download</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <label>Preview / Output</label>
+          <div id="preview" class="preview">No output yet.</div>
+        </div>
+
+        <div id="log" class="hint" aria-live="polite" style="margin-top:10px"></div>
+      </section>
+
+      <aside class="sidebar card">
+        <h3 style="margin-top:0">Settings & Ads</h3>
+        <div class="muted">Place for Google AdSense — replace the placeholder with your ad unit code.</div>
+
+        <!-- AdSense insertion point: replace inner HTML with your ad snippet -->
+        <div class="ad-slot" id="adsense-slot">
+          <!-- Example: paste your AdSense <ins>... data-ad-client/slot etc. -->
+          <small>AdSense slot — paste your code here</small>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="fileName">Custom output filename (optional)</label>
+          <input id="fileName" type="text" placeholder="my-document" />
+          <div class="hint">Don't include extension. We'll add it automatically.</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="seo">SEO meta (optional)</label>
+          <input id="seoTitle" type="text" placeholder="Title for generated HTML (if output=HTML)" />
+          <div class="hint">Used when exporting HTML</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <strong>Performance & UX</strong>
+          <ul class="muted" style="padding-left:18px;margin:8px 0">
+            <li>Client-side conversion — faster & private</li>
+            <li>Lazy-load heavy libraries only when needed</li>
+            <li>Responsive UI for phones & desktops</li>
+          </ul>
+        </div>
+
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    Built with privacy in mind — files stay in your browser. 
+  </footer>
+
+  <!-- Libraries (lazy-loaded when needed) -->
+  <script>
+    // Small helper to lazy-load scripts
+    function loadScript(src){
+      return new Promise((resolve,reject)=>{
+        if(document.querySelector(`script[src="${src}"]`)) return resolve();
+        const s=document.createElement('script'); s.src=src; s.defer=true; s.onload=resolve; s.onerror=reject; document.head.appendChild(s);
+      })
+    }
+
+    // DOM refs
+    const fileInput = document.getElementById('file');
+    const target = document.getElementById('target');
+    const convertBtn = document.getElementById('convertBtn');
+    const preview = document.getElementById('preview');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileNameInput = document.getElementById('fileName');
+    const seoTitleInput = document.getElementById('seoTitle');
+    const log = document.getElementById('log');
+
+    let currentOutput = null; // { data: Blob|string, filename, mime }
+    let currentFile = null;
+
+    fileInput.addEventListener('change', ()=>{
+      const f = fileInput.files && fileInput.files[0];
+      if(!f) return;
+      currentFile = f;
+      fileInfo.textContent = `${f.name} — ${Math.round(f.size/1024)} KB`;
+      preview.textContent = 'Ready to convert. Choose output and press Convert.';
+      downloadBtn.disabled = true;
+      currentOutput = null;
+    })
+
+    convertBtn.addEventListener('click', async ()=>{
+      if(!currentFile){ alert('Please select a file first.'); return; }
+      convertBtn.disabled = true; convertBtn.textContent = 'Converting...'; log.textContent = '';
+      try{
+        const inType = inferType(currentFile.name, currentFile.type);
+        const outType = target.value; // txt|html|pdf
+        // Route conversions
+        if(inType === 'docx'){
+          await ensureMammoth();
+          const arrayBuf = await currentFile.arrayBuffer();
+          const result = await mammoth.convertToHtml({arrayBuffer: arrayBuf});
+          const html = wrapHtml(result.value, seoTitleInput.value || currentFile.name.replace(/\.[^.]+$/,''));
+          if(outType === 'html') return finishAsText(html, 'text/html', '.html');
+          if(outType === 'txt') return finishAsText(stripHtml(html), 'text/plain', '.txt');
+          if(outType === 'pdf') return await downloadHtmlAsPdf(html);
+        }
+
+        if(inType === 'txt' || inType === 'md' || inType === 'html'){
+          const text = await currentFile.text();
+          if(outType === 'txt') return finishAsText(text, 'text/plain', '.txt');
+          if(outType === 'html'){
+            const html = inType === 'html' ? text : wrapHtml(escapeHtml(text).replace(/\n/g,'<br/>'), seoTitleInput.value || currentFile.name);
+            return finishAsText(html, 'text/html', '.html');
+          }
+          if(outType === 'pdf'){
+            const html = inType === 'html' ? text : wrapHtml(escapeHtml(text).replace(/\n/g,'<br/>'), seoTitleInput.value || currentFile.name);
+            return await downloadHtmlAsPdf(html);
+          }
+        }
+
+        if(inType === 'pdf'){
+          // PDF -> text supported. PDF -> HTML or PDF->PDF (identity) limited.
+          await ensurePdfJs();
+          const arrayBuf = await currentFile.arrayBuffer();
+          const txt = await pdfToText(arrayBuf);
+          if(outType === 'txt') return finishAsText(txt, 'text/plain', '.txt');
+          if(outType === 'html') return finishAsText(wrapHtml(escapeHtml(txt).replace(/\n/g,'<br/>'), seoTitleInput.value || currentFile.name), 'text/html', '.html');
+          if(outType === 'pdf') return finishAsBlob(new Blob([arrayBuf],{type:'application/pdf'}), currentFile.name, 'application/pdf');
+        }
+
+        throw new Error('Unsupported conversion.');
+      }catch(err){
+        console.error(err); log.textContent = 'Error: '+(err.message||err);
+      }finally{ convertBtn.disabled=false; convertBtn.textContent='Convert'; }
+    })
+
+    // Download handler
+    downloadBtn.addEventListener('click', ()=>{
+      if(!currentOutput) return;
+      if(currentOutput.data instanceof Blob){
+        saveBlob(currentOutput.data, currentOutput.filename);
+      }else{
+        // string
+        const blob = new Blob([currentOutput.data], {type: currentOutput.mime});
+        saveBlob(blob, currentOutput.filename);
+      }
+    })
+
+    // Helpers
+    function inferType(name, mime){
+      name = name.toLowerCase();
+      if(name.endsWith('.docx')) return 'docx';
+      if(name.endsWith('.pdf')) return 'pdf';
+      if(name.endsWith('.txt')) return 'txt';
+      if(name.endsWith('.md')) return 'md';
+      if(name.endsWith('.html')||name.endsWith('.htm')) return 'html';
+      // fallbacks
+      if(mime.includes('pdf')) return 'pdf';
+      if(mime.includes('word')) return 'docx';
+      if(mime.includes('text')) return 'txt';
+      return 'unknown';
+    }
+
+    function wrapHtml(bodyHtml, title){
+      return `<!doctype html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${escapeHtml(title||'Document')}</title></head><body>${bodyHtml}</body></html>`;
+    }
+    function escapeHtml(s){ return (s+'').replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':'&quot;'})[c]); }
+    function stripHtml(s){ return s.replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&'); }
+
+    function finishAsText(text, mime, ext){
+      const base = fileNameInput.value.trim() || currentFile.name.replace(/\.[^.]+$/,'');
+      const filename = base + ext;
+      currentOutput = {data:text, filename, mime};
+      preview.innerHTML = mime==='text/plain' ? `<pre style="white-space:pre-wrap">${escapeHtml(text)}</pre>` : text;
+      downloadBtn.disabled = false; log.textContent = 'Conversion ready.';
+    }
+    function finishAsBlob(blob, filename, mime){
+      currentOutput = {data:blob, filename: filename || (fileNameInput.value||currentFile.name), mime};
+      preview.innerHTML = mime==='application/pdf' ? `<iframe style="width:100%;height:420px;border:0" src="${URL.createObjectURL(blob)}"></iframe>` : 'Preview ready';
+      downloadBtn.disabled = false; log.textContent = 'Conversion ready.';
+    }
+
+    function saveBlob(blob, name){
+      // use native download technique
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    // Lazy-load mammoth for docx conversion
+    let mammothLoaded = false;
+    async function ensureMammoth(){
+      if(mammothLoaded) return;
+      log.textContent = 'Loading docx converter...';
+      await loadScript('https://unpkg.com/mammoth/mammoth.browser.min.js');
+      mammothLoaded = true; log.textContent='';
+    }
+
+    // Lazy-load pdf.js for pdf->text
+    let pdfjsLoaded = false;
+    async function ensurePdfJs(){
+      if(pdfjsLoaded) return;
+      log.textContent = 'Loading PDF parser...';
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js');
+      // try to set workerSrc if available
+      if(window['pdfjsLib'] && window['pdfjsLib'].GlobalWorkerOptions) {
+        window['pdfjsLib'].GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.worker.min.js';
+      }
+      pdfjsLoaded = true; log.textContent='';
+    }
+
+    async function pdfToText(arrayBuffer){
+      const pdfjs = window['pdfjsLib'];
+      if(!pdfjs) throw new Error('pdf.js not loaded');
+      const loading = pdfjs.getDocument({data:arrayBuffer});
+      const doc = await loading.promise;
+      let full = '';
+      for(let p=1;p<=doc.numPages;p++){
+        const page = await doc.getPage(p);
+        const txt = await page.getTextContent();
+        const pageText = txt.items.map(i=>i.str).join(' ');
+        full += pageText + '\n\n';
+      }
+      return full.trim();
+    }
+
+    // html -> pdf using html2pdf (lazy load)
+    async function downloadHtmlAsPdf(html){
+      log.textContent = 'Generating PDF...';
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+      // create hidden container
+      const container = document.createElement('div'); container.style.display='block'; container.style.position='fixed'; container.style.left='-9999px'; container.innerHTML = html;
+      document.body.appendChild(container);
+      const opt = { margin:10, filename:(fileNameInput.value.trim()||currentFile.name.replace(/\.[^.]+$/,''))+'.pdf', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:1}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
+      await html2pdf().set(opt).from(container).save();
+      container.remove();
+      log.textContent = 'PDF generated and download started.';
+      convertBtn.disabled=false; convertBtn.textContent='Convert';
+    }
+
+    // tiny util used when we want to create a blob then preview
+    function finishAsText(str, mime, ext){
+      const filename = (fileNameInput.value.trim()||currentFile.name.replace(/\.[^.]+$/,'')) + ext;
+      currentOutput = {data:str, filename, mime};
+      if(mime==='text/plain') preview.innerHTML = `<pre style="white-space:pre-wrap">${escapeHtml(str)}</pre>`;
+      else preview.innerHTML = str;
+      downloadBtn.disabled=false; log.textContent='Conversion ready.';
+    }
+
+    // Prevent heavy libs from auto-loading on page load. The UI will fetch them when needed.
+
+    // Small accessibility keyboard shortcut: press C to convert when file selected
+    document.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='c' && currentFile) convertBtn.click(); });
+
+    // Optional: guidance for where to place AdSense code
+    // Replace innerHTML of #adsense-slot with your AdSense <ins class="adsbygoogle" ...> snippet.
+
+  </script>
+</body>
+</html>
